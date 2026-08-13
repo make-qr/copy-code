@@ -1,993 +1,926 @@
-<!DOCTYPE html>  
-<html>  
-<head>  
-  <title>Hiển thị Kết Quả Dạng Code</title>  
-  <style>  
-    body {  
-      font-family: Arial, sans-serif;  
-      margin: 20px;
-      line-height: 1.6;
-      color: #333;
-      max-width: 1200px;
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chèn Liên Kết &amp; Hiển Thị Dạng Code</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --panel: #fff;
+      --text: #1f2933;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #16a34a;
+      --accent-hover: #15803d;
+      --code: #f3f4f6;
+      --preview: #fff;
+      --shadow: 0 1px 2px rgba(0,0,0,.06);
+    }
+    .dark {
+      --bg: #1e293b;
+      --panel: #273549;
+      --text: #e5eef7;
+      --muted: #94a3b8;
+      --line: #334155;
+      --accent: #22c55e;
+      --accent-hover: #16a34a;
+      --code: #1e293b;
+      --preview: #1e293b;
+      --shadow: none;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+    .app {
+      height: 100dvh;
+      max-width: 1280px;
       margin: 0 auto;
-      padding: 20px;
-    }  
-    label {  
-      display: block;  
-      margin-bottom: 5px;
-      font-weight: bold;  
-    }  
-    textarea, input[type="text"], input[type="number"] {  
-      width: 100%;  
-      padding: 10px;  
-      margin-bottom: 15px;  
-      border: 1px solid #ddd;  
-      border-radius: 4px;  
-      box-sizing: border-box;
-      transition: border-color 0.3s;
-      background-color: white;
-      color: #333;
+      padding: 10px 12px 12px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: 8px;
+    }
+    .sticky-note {
+      position: fixed;
+      z-index: 40;
+      width: 400px;
+      min-width: 280px;
+      left: 16px;
+      top: 56px;
+      background: #fff3a1;
+      color: #3f3a1f;
+      border: 1px solid #ead56a;
+      border-radius: 8px;
+      box-shadow: 3px 6px 16px rgba(0,0,0,.18);
+      padding: 0 8px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sticky-note.collapsed .sticky-body { display: none; }
+    .sticky-handle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin: 0 -8px 2px;
+      padding: 7px 8px;
+      background: #ffe566;
+      border-radius: 8px 8px 0 0;
+      cursor: grab;
+      user-select: none;
+      font-size: 12px;
+      font-weight: 700;
+      color: #6b5b16;
+    }
+    .sticky-note.dragging .sticky-handle { cursor: grabbing; }
+    .sticky-handle button {
+      padding: 3px 7px;
+      font-size: 11px;
+      background: #c9a227;
+    }
+    .sticky-handle button:hover { background: #a88612; }
+    .sticky-note label {
+      margin-bottom: 2px;
+      color: #6b5b16;
+    }
+    .sticky-note input,
+    .sticky-note textarea {
+      background: rgba(255,255,255,.55);
+      border: 1px solid #ead56a;
+      color: #3f3a1f;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+    .sticky-note textarea {
+      height: 140px;
+      min-height: 100px;
+      flex: none;
+      resize: vertical;
+      line-height: 1.4;
+    }
+    .sticky-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 4px;
+      align-items: end;
+    }
+    .sticky-row button {
+      padding: 6px 8px;
+      font-size: 11px;
+      background: #c9a227;
+    }
+    .sticky-row button:hover { background: #a88612; }
+    .sticky-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .sticky-actions button {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 11px;
+      background: #16a34a;
+    }
+    .dark .sticky-note {
+      background: #d4c15a;
+      border-color: #b8a43d;
+      color: #2d2912;
+    }
+    .dark .sticky-handle { background: #c9b24a; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 32px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .theme {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+      gap: 8px;
+      min-height: 0;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+    }
+    .editor {
+      min-height: 0;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--preview);
+      color: var(--text);
+      font: inherit;
+    }
+    textarea {
+      flex: 1;
+      min-height: 0;
+      resize: none;
+      line-height: 1.45;
     }
     textarea:focus, input:focus {
-      border-color: #4CAF50;
       outline: none;
+      border-color: var(--accent);
     }
-    .result-code {  
-      margin-top: 20px;  
-      border: 1px solid #ddd;  
-      padding: 15px;  
-      border-radius: 8px;  
-      background-color: #f9f9f9;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }  
-    pre {  
-      background: #f1f1f1;  
-      padding: 12px;  
-      border-radius: 4px;  
-      overflow-x: auto;
-      margin: 0;
-      border-left: 3px solid #4CAF50;
-      color: #333;
-    }  
-    .copy-btn {  
-      margin-top: 10px;  
-      padding: 8px 15px;  
-      border: none;  
-      background-color: #4CAF50;  
-      color: white;  
-      border-radius: 4px;  
-      cursor: pointer;  
-      transition: background-color 0.3s;
-      font-weight: bold;
-    }  
-    .copy-btn:hover {  
-      background-color: #45a049;  
+    .fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .password-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto auto;
+      gap: 6px;
+      align-items: end;
+      margin-top: 8px;
+    }
+    .password-row input {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .02em;
+    }
+    .actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
     }
     button {
-      padding: 10px 15px;
-      background-color: #4CAF50;
-      color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
       cursor: pointer;
-      transition: background-color 0.3s;
-      font-weight: bold;
+      padding: 8px 12px;
+      white-space: nowrap;
     }
-    button:hover {
-      background-color: #45a049;
+    button:hover { background: var(--accent-hover); }
+    button.secondary {
+      background: #475569;
     }
-    h1, h2, h3 {  
-      color: #2c3e50;
-      border-bottom: 2px solid #eee;
-      padding-bottom: 5px; 
-    }
-    .controls {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .control-group {
-      flex: 1;
-      min-width: 250px;
-    }
-    .preview-section {
-      margin-top: 20px;
-      padding: 15px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    button.secondary:hover { background: #334155; }
+    .preview-title, .bottom-title {
+      margin: 0 0 6px;
+      font-size: 13px;
+      font-weight: 700;
     }
     .preview-content {
-      padding: 15px;
-      border: 1px solid #eee;
-      border-radius: 4px;
-      background-color: #fff;
-      min-height: 100px;
-      color: #333;
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      background: var(--preview);
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .preview-content a { color: #2563eb; }
+    .dark .preview-content a { color: #93c5fd; }
+    .bottom {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.6fr);
+      gap: 8px;
+      min-height: 0;
     }
     .tabs {
       display: flex;
-      margin-bottom: 15px;
-      border-bottom: 1px solid #ddd;
+      gap: 4px;
+      margin-bottom: 6px;
     }
     .tab {
-      padding: 8px 15px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--code);
+      color: var(--text);
       cursor: pointer;
-      background-color: #f1f1f1;
-      border: 1px solid #ddd;
-      border-bottom: none;
-      border-radius: 4px 4px 0 0;
-      margin-right: 5px;
-      color: #333;
+      font-size: 12px;
+      font-weight: 700;
     }
     .tab.active {
-      background-color: white;
-      border-bottom: 2px solid white;
-      font-weight: bold;
-      color: #4CAF50;
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
     }
-    .tab-content {
-      display: none;
+    .code-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
     }
-    .tab-content.active {
-      display: block;
+    .tab-content { display: none; flex: 1; min-height: 0; flex-direction: column; }
+    .tab-content.active { display: flex; }
+    pre {
+      flex: 1;
+      min-height: 0;
+      margin: 0 0 6px;
+      padding: 8px 10px;
+      overflow: auto;
+      background: var(--code);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
-    .theme-switch {
-      position: absolute;
-      top: 20px;
-      right: 20px;
+    .history-head {
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
     }
-    .dark-mode {
-      background-color: #2c3e50;
-      color: #ecf0f1;
+    .history-head h3 {
+      margin: 0;
+      font-size: 13px;
     }
-    .dark-mode .result-code, .dark-mode .preview-section {
-      background-color: #34495e;
-      border-color: #2c3e50;
+    .history-head button {
+      padding: 5px 8px;
+      font-size: 12px;
     }
-    .dark-mode pre {
-      background-color: #2c3e50;
-      border-left-color: #3498db;
-      color: #ecf0f1;
-    }
-    .dark-mode .tab {
-      background-color: #34495e;
-      border-color: #2c3e50;
-      color: #ecf0f1;
-    }
-    .dark-mode .tab.active {
-      background-color: #2c3e50;
-      color: #3498db;
-    }
-    .dark-mode h1, .dark-mode h2, .dark-mode h3 {
-      color: #ecf0f1;
-      border-bottom-color: #34495e;
-    }
-    .dark-mode .preview-content {
-      background-color: #34495e;
-      border-color: #2c3e50;
-      color: #ecf0f1;
-    }
-    .dark-mode textarea, .dark-mode input[type="text"], .dark-mode input[type="number"] {
-      background-color: #2c3e50;
-      color: #ecf0f1;
-      border-color: #1a252f;
-    }
-    @media (max-width: 768px) {
-      .controls {
-        flex-direction: column;
-      }
-    }
-    .history-panel {
-      margin-top: 20px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      background-color: #f9f9f9;
-      padding: 15px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    #historyItems {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
     }
     .history-item {
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-      transition: background-color 0.2s;
       display: flex;
       justify-content: space-between;
+      gap: 8px;
       align-items: center;
-    }
-    .history-item:hover {
-      background-color: #f1f1f1;
-    }
-    .history-item:last-child {
-      border-bottom: none;
-    }
-    .dark-mode .history-panel {
-      background-color: #34495e;
-      border-color: #2c3e50;
-    }
-    .dark-mode .history-item {
-      border-bottom-color: #2c3e50;
-    }
-    .dark-mode .history-item:hover {
-      background-color: #2c3e50;
-    }
-    .history-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 10px;
-      gap: 10px;
-    }
-    .history-date {
-      font-size: 0.8em;
-      color: #777;
-    }
-    .dark-mode .history-date {
-      color: #bbb;
-    }
-    .cookie-notice {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background-color: rgba(0,0,0,0.8);
-      color: white;
-      padding: 15px;
-      text-align: center;
-      z-index: 100;
-    }
-    .cookie-notice button {
-      margin-left: 10px;
-      padding: 8px 15px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .big-button {
-      padding: 12px 20px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      display: block;
-      margin: 20px auto;
-      font-weight: bold;
-    }
-    .instructions {
-      background-color: #fffde7;
-      border-left: 4px solid #ffeb3b;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 4px;
-    }
-    .instructions h3 {
-      margin-top: 0;
-      color: #333;
-    }
-    .dark-mode .instructions {
-      background-color: #34495e;
-      border-left-color: #f1c40f;
-    }
-    .storage-status {
-      margin-top: 15px;
-      font-size: 14px;
-      color: #666;
-    }
-    .success {
-      color: #4CAF50;
-    }
-    .error {
-      color: #f44336;
-    }
-    .dark-mode .success {
-      color: #8bc34a;
-    }
-    .dark-mode .error {
-      color: #e57373;
-    }
-    /* Thêm các lớp tiện ích */
-    .debug-info {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 5px 10px;
-      border-radius: 4px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--line);
       font-size: 12px;
-      z-index: 9999;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-meta {
+      min-width: 0;
+    }
+    .history-meta strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .history-date { color: var(--muted); font-size: 11px; }
+    .history-item button {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .toast {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      background: rgba(0,0,0,.78);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
       display: none;
+      z-index: 50;
     }
-  </style>  
-</head>  
-<body>  
-  <div class="theme-switch">
-    <label for="darkMode">Chế độ tối:</label>
-    <input type="checkbox" id="darkMode" onchange="toggleDarkMode()">
-  </div>
-
-  <div id="cookieNotice" class="cookie-notice">
-    <strong>Thông báo:</strong> Trang web này cần lưu trữ dữ liệu trên trình duyệt của bạn để lưu lịch sử nhập liệu.
-    <button id="acceptCookieBtn" onclick="acceptCookies()">Đồng ý lưu trữ</button>
-  </div>
-
-  <div id="storageInstructions" class="instructions" style="display: none;">
-    <h3>Hướng dẫn để lưu thiết lập</h3>
-    <p>Để có thể lưu thiết lập trong Chrome, bạn cần:</p>
-    <ol>
-      <li>Nhấp vào nút <strong>"Đồng ý lưu trữ"</strong> ở thông báo phía dưới trang</li>
-      <li>Nếu vẫn gặp vấn đề, hãy kiểm tra xem Chrome có chặn cookie/localStorage không:
-        <ul>
-          <li>Mở Settings > Privacy and Security > Site Settings > Cookies</li>
-          <li>Đảm bảo rằng "Block third-party cookies" không chặn trang web này</li>
-        </ul>
-      </li>
-      <li>Nếu bạn đang dùng chế độ ẩn danh (Incognito), hãy thử mở trang web này trong chế độ duyệt web thông thường</li>
-    </ol>
-    <button class="big-button" onclick="acceptCookies()">Đồng ý lưu trữ dữ liệu</button>
-    <div id="storageStatus" class="storage-status"></div>
-  </div>
-
-  <h1>Chèn Liên Kết & Hiển Thị Dạng Code</h1>  
-
-  <div class="controls">
-    <div class="control-group">
-      <label for="limitedContent">Nhập nội dung:</label>  
-      <textarea id="limitedContent" rows="5" placeholder="Nội dung này sẽ được thay thế từ khóa bằng liên kết"></textarea>  
-
-      <div class="toggle-section">
-      -----------------------------------------
-        <div id="linkContent" class="toggle-content active">
-          <label for="keyword">Từ khóa:</label>  
-          <input type="text" id="keyword" placeholder="Nhập từ cần thay thế">  
-
-          <label for="link">Link website:</label>  
-          <input type="text" id="link" placeholder="Nhập link website">  
-          
-          <label for="linkLimit">Số lượng liên kết tối đa:</label>
-          <input type="number" id="linkLimit" value="2" min="1" max="100">
-        </div>
-      </div>
-
-      <div class="toggle-section">
------------------------        
-      <div id="imageContent" class="toggle-content">
-          <label for="imageUrl">Link hình ảnh:</label>
-          <input type="text" id="imageUrl" placeholder="Nhập đường dẫn hình ảnh">
-          
-          <label for="imageAlt">Mô tả hình ảnh:</label>
-          <input type="text" id="imageAlt" placeholder="Nhập mô tả cho hình ảnh">
-          
-          <label for="imageWidth">Chiều rộng (px):</label>
-          <input type="number" id="imageWidth" placeholder="Để trống để sử dụng kích thước mặc định" min="1">
-          
-          <button onclick="previewImage()">Xem trước ảnh</button>
-          <img id="imagePreview" class="image-preview" style="display: none;">
-        </div>
-      </div>
-      
-      <div style="display: flex; gap: 10px; margin-top: 15px;">
-        <button onclick="generateContent()">Tạo Nội Dung</button>
-        <button onclick="saveToHistory()">Lưu Thiết Lập</button>
-      </div>
-    </div>
-
-    <div class="control-group preview-section">
-      <h3>Xem trước kết quả:</h3>
-      <div class="preview-content" id="previewContent">
-        Kết quả xem trước sẽ hiển thị ở đây...
-      </div>
-    </div>
-  </div>
-
-  <div class="history-panel">
-    <h3>Lịch sử (Lưu tối đa 10 lần)</h3>
-    <div id="historyItems">
-      <!-- Các mục lịch sử sẽ được thêm vào đây bằng JavaScript -->
-    </div>
-    <div class="history-actions">
-      <button onclick="clearHistory()">Xóa Tất Cả</button>
-    </div>
-  </div>
-
-  <div class="result-code">  
-    <h2>Kết quả (dạng Code):</h2>  
-
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('html')">HTML</div>
-      <div class="tab" onclick="switchTab('markdown')">Markdown</div>
-      <div class="tab" onclick="switchTab('bbcode')">BBCode</div>
-      <div class="tab" onclick="switchTab('plain')">Plain URL</div>
-    </div>
-
-    <div class="tab-content active" id="html-tab">
-      <pre><code id="htmlCodeOutput"></code></pre>  
-      <button id="htmlCopyBtn" class="copy-btn" onclick="copyCode('htmlCodeOutput','htmlCopyBtn')">Copy Code</button>  
-    </div>
-
-    <div class="tab-content" id="markdown-tab">
-      <pre><code id="markdownCodeOutput"></code></pre>  
-      <button id="markdownCopyBtn" class="copy-btn" onclick="copyCode('markdownCodeOutput','markdownCopyBtn')">Copy Code</button>  
-    </div>
-
-    <div class="tab-content" id="bbcode-tab">
-      <pre><code id="bbcodeCodeOutput"></code></pre>  
-      <button id="bbcodeCopyBtn" class="copy-btn" onclick="copyCode('bbcodeCodeOutput','bbcodeCopyBtn')">Copy Code</button>  
-    </div>
-
-    <div class="tab-content" id="plain-tab">
-      <pre><code id="plainCodeOutput"></code></pre>  
-      <button id="plainCopyBtn" class="copy-btn" onclick="copyCode('plainCodeOutput','plainCopyBtn')">Copy Code</button>  
-    </div>
-  </div>  
-
-  <script>  
-    // Biến global để kiểm tra khả năng lưu trữ
-    let storageAvailable = false;
-    let storageType = 'none';
-    
-    // Khởi tạo biến trạng thái lưu
-    let saveStatus = {
-      lastSaved: null,
-      error: null
-    };
-    
-    // Hiển thị thông tin lỗi khi cần thiết
-    function showDebugInfo() {
-      const debugDiv = document.createElement('div');
-      debugDiv.className = 'debug-info';
-      debugDiv.id = 'debugInfo';
-      document.body.appendChild(debugDiv);
-      
-      // Kiểm tra khả năng lưu trữ
-      try {
-        localStorage.setItem('testStorage', 'test');
-        const testValue = localStorage.getItem('testStorage');
-        localStorage.removeItem('testStorage');
-        
-        if (testValue === 'test') {
-          debugDiv.textContent = 'LocalStorage hoạt động bình thường';
-          debugDiv.style.backgroundColor = 'rgba(0,128,0,0.7)';
-        } else {
-          debugDiv.textContent = 'LocalStorage không lưu trữ đúng';
-          debugDiv.style.backgroundColor = 'rgba(255,0,0,0.7)';
-        }
-      } catch (e) {
-        debugDiv.textContent = 'Lỗi: ' + e.message;
-        debugDiv.style.backgroundColor = 'rgba(255,0,0,0.7)';
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .app {
+        height: auto;
+        min-height: 100dvh;
+        grid-template-rows: auto auto auto;
       }
-      
-      debugDiv.style.display = 'block';
-      setTimeout(() => {
-        debugDiv.style.display = 'none';
-      }, 5000);
+      .workspace, .bottom, .fields, .password-row {
+        grid-template-columns: 1fr;
+      }
+      textarea { min-height: 160px; }
+      .preview-content, pre, #historyItems { min-height: 140px; }
     }
-    
-    // Kiểm tra cookie ngay khi trang bắt đầu tải
-    document.addEventListener('DOMContentLoaded', function() {
-      // Kiểm tra khả năng lưu trữ
-      checkStorageAvailability();
-      
-      // Điền nội dung mẫu
-      document.getElementById("limitedContent").value = "Đây là một ví dụ về từ khóa và cách nó được thay thế bằng liên kết. Từ khóa này sẽ xuất hiện nhiều lần nhưng chỉ được thay thế một số lần.";
-      document.getElementById("keyword").value = "từ khóa";
-      document.getElementById("link").value = "https://example.com";
-      
-      // Kiểm tra việc lưu trữ và hiển thị hướng dẫn nếu cần
-      if (!isStorageAccepted()) {
-        document.getElementById("cookieNotice").style.display = "block";
-        document.getElementById("storageInstructions").style.display = "block";
-        updateStorageStatus();
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Chèn Liên Kết &amp; Hiển Thị Dạng Code</h1>
+      <label class="theme">
+        Chế độ tối
+        <input type="checkbox" id="darkMode">
+      </label>
+    </header>
+
+    <aside class="sticky-note" id="stickyNoteCard">
+      <div class="sticky-handle" id="stickyHandle" tabindex="0">
+        <span>Ghi chú</span>
+        <button type="button" id="stickyToggle" title="Thu gọn / mở">−</button>
+      </div>
+      <div class="sticky-body" id="stickyBody">
+        <div>
+          <label for="stickySite">Tên web</label>
+          <div class="sticky-row">
+            <input type="text" id="stickySite" placeholder="Tên website">
+            <button type="button" data-copy-sticky="stickySite">Copy</button>
+          </div>
+        </div>
+        <div>
+          <label for="stickyUrl">Link web</label>
+          <div class="sticky-row">
+            <input type="text" id="stickyUrl" placeholder="https://">
+            <button type="button" data-copy-sticky="stickyUrl">Copy</button>
+          </div>
+        </div>
+        <div>
+          <label for="stickyPassword">Mật khẩu</label>
+          <div class="sticky-row">
+            <input type="text" id="stickyPassword" spellcheck="false" autocomplete="off" placeholder="Mật khẩu">
+            <button type="button" data-copy-sticky="stickyPassword">Copy</button>
+          </div>
+        </div>
+        <div>
+          <label for="stickyNote">Ghi chú thêm</label>
+          <textarea id="stickyNote" placeholder="Ghi chú, checklist..."></textarea>
+        </div>
+        <div class="sticky-actions">
+          <button type="button" id="stickyFromForm">Lấy từ form</button>
+          <button type="button" id="stickyToForm">Điền vào form</button>
+        </div>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <div class="panel editor">
+        <label for="limitedContent">Nhập nội dung</label>
+        <textarea id="limitedContent" placeholder="Nội dung này sẽ được thay thế từ khóa bằng liên kết"></textarea>
+
+        <div class="fields">
+          <div>
+            <label for="keyword">Từ khóa</label>
+            <input type="text" id="keyword" placeholder="Nhập từ cần thay thế">
+          </div>
+          <div>
+            <label for="link">Link website</label>
+            <input type="text" id="link" placeholder="https://example.com">
+          </div>
+        </div>
+
+        <div class="password-row">
+          <div>
+            <label for="password">Mật khẩu mạnh</label>
+            <input type="text" id="password" spellcheck="false" autocomplete="off">
+          </div>
+          <button type="button" id="regenPassword" title="Tạo mật khẩu mới">Tạo mới</button>
+          <button type="button" class="secondary" id="copyPassword">Copy</button>
+          <button type="button" class="secondary" id="insertPassword">Chèn</button>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="generateBtn">Tạo Nội Dung</button>
+          <button type="button" class="secondary" id="saveBtn">Lưu Thiết Lập</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 class="preview-title">Xem trước kết quả</h3>
+        <div class="preview-content" id="previewContent">Kết quả xem trước sẽ hiển thị ở đây...</div>
+      </div>
+    </section>
+
+    <section class="bottom">
+      <div class="panel">
+        <h2 class="bottom-title">Kết quả (dạng code)</h2>
+        <div class="tabs">
+          <button type="button" class="tab active" data-tab="html">HTML</button>
+          <button type="button" class="tab" data-tab="markdown">Markdown</button>
+          <button type="button" class="tab" data-tab="bbcode">BBCode</button>
+          <button type="button" class="tab" data-tab="plain">Plain URL</button>
+        </div>
+        <div class="code-wrap">
+          <div class="tab-content active" id="html-tab">
+            <pre><code id="htmlCodeOutput"></code></pre>
+            <button type="button" class="copy-btn" data-copy="htmlCodeOutput">Copy Code</button>
+          </div>
+          <div class="tab-content" id="markdown-tab">
+            <pre><code id="markdownCodeOutput"></code></pre>
+            <button type="button" class="copy-btn" data-copy="markdownCodeOutput">Copy Code</button>
+          </div>
+          <div class="tab-content" id="bbcode-tab">
+            <pre><code id="bbcodeCodeOutput"></code></pre>
+            <button type="button" class="copy-btn" data-copy="bbcodeCodeOutput">Copy Code</button>
+          </div>
+          <div class="tab-content" id="plain-tab">
+            <pre><code id="plainCodeOutput"></code></pre>
+            <button type="button" class="copy-btn" data-copy="plainCodeOutput">Copy Code</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="history-head">
+          <h3>Lịch sử (tối đa 10)</h3>
+          <button type="button" class="secondary" id="clearHistoryBtn">Xóa tất cả</button>
+        </div>
+        <div id="historyItems"></div>
+      </div>
+    </section>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const LINK_LIMIT = 2;
+    const HISTORY_KEY = "copyCodeHistory";
+    const LEGACY_HISTORY_KEY = "inputHistory";
+    const THEME_KEY = "copyCodeDark";
+    const NOTE_KEY = "copyCodeStickyNote";
+
+    const limitedContent = document.getElementById("limitedContent");
+    const keywordInput = document.getElementById("keyword");
+    const linkInput = document.getElementById("link");
+    const passwordInput = document.getElementById("password");
+    const previewContent = document.getElementById("previewContent");
+    const darkMode = document.getElementById("darkMode");
+    const toast = document.getElementById("toast");
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.style.display = "block";
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => { toast.style.display = "none"; }, 2200);
+    }
+
+    function generateStrongPassword(length = 16) {
+      const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+      const lower = "abcdefghijkmnopqrstuvwxyz";
+      const digits = "23456789";
+      const symbols = "!@#$%^&*-_=+";
+      const sets = [upper, lower, digits, symbols];
+      const all = sets.join("");
+      const bytes = new Uint32Array(length);
+      crypto.getRandomValues(bytes);
+      const chars = Array.from({ length }, (_, i) => {
+        const set = sets[i] || all;
+        return set[bytes[i] % set.length];
+      });
+      for (let i = chars.length - 1; i > 0; i--) {
+        const j = bytes[i] % (i + 1);
+        [chars[i], chars[j]] = [chars[j], chars[i]];
+      }
+      return chars.join("");
+    }
+
+    function refreshPassword() {
+      passwordInput.value = generateStrongPassword();
+    }
+
+    function copyText(text, successMessage) {
+      if (!text) return;
+      const done = () => showToast(successMessage);
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
       } else {
-        document.getElementById("cookieNotice").style.display = "none";
+        fallbackCopy(text, done);
       }
-      
-      // Tải lịch sử
-      loadHistory();
-    });
-    
-    // Kiểm tra khả năng lưu trữ
-    function checkStorageAvailability() {
-      // Kiểm tra localStorage
-      try {
-        localStorage.setItem('test', 'test');
-        localStorage.removeItem('test');
-        storageAvailable = true;
-        storageType = 'localStorage';
-        return true;
-      } catch (e) {
-        console.log('localStorage không khả dụng:', e);
-      }
-      
-      // Kiểm tra sessionStorage nếu localStorage không khả dụng
-      try {
-        sessionStorage.setItem('test', 'test');
-        sessionStorage.removeItem('test');
-        storageAvailable = true;
-        storageType = 'sessionStorage';
-        return true;
-      } catch (e) {
-        console.log('sessionStorage không khả dụng:', e);
-      }
-      
-      // Không có phương thức lưu trữ nào khả dụng
-      storageAvailable = false;
-      storageType = 'none';
-      return false;
     }
-    
-    // Cập nhật thông tin trạng thái lưu trữ
-    function updateStorageStatus() {
-      const statusElement = document.getElementById('storageStatus');
-      if (statusElement) {
-        if (storageAvailable) {
-          if (isStorageAccepted()) {
-            statusElement.innerHTML = '<span class="success">✓ Đã chấp nhận lưu trữ. Bạn có thể lưu thiết lập.</span>';
-          } else {
-            statusElement.innerHTML = '<span class="error">✗ Chưa chấp nhận lưu trữ. Nhấp nút "Đồng ý lưu trữ" để tiếp tục.</span>';
-          }
-        } else {
-          statusElement.innerHTML = '<span class="error">✗ Trình duyệt của bạn không hỗ trợ lưu trữ. Hãy thử trình duyệt khác hoặc tắt chế độ ẩn danh.</span>';
+
+    function fallbackCopy(text, done) {
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.style.position = "fixed";
+      area.style.left = "-9999px";
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand("copy"); done(); } catch (err) { console.error(err); }
+      document.body.removeChild(area);
+    }
+
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function toHtmlLayout(text) {
+      return escapeHtml(text).replace(/\r\n|\r|\n/g, "<br>");
+    }
+
+    function replaceLimited(content, keyword, replacement) {
+      if (!keyword) return content;
+      let count = 0;
+      return content.replace(new RegExp(escapeRegExp(keyword), "gi"), function (match) {
+        if (count < LINK_LIMIT) {
+          count += 1;
+          return replacement;
         }
-      }
-    }
-    
-    // Kiểm tra nếu người dùng đã chấp nhận lưu trữ
-    function isStorageAccepted() {
-      if (storageType === 'localStorage') {
-        return localStorage.getItem("storageAccepted") === "true";
-      } else if (storageType === 'sessionStorage') {
-        return sessionStorage.getItem("storageAccepted") === "true";
-      }
-      return false;
-    }
-    
-    // Đặt giá trị vào bộ nhớ
-    function setStorageItem(key, value) {
-      if (storageType === 'localStorage') {
-        localStorage.setItem(key, value);
-        return true;
-      } else if (storageType === 'sessionStorage') {
-        sessionStorage.setItem(key, value);
-        return true;
-      }
-      return false;
-    }
-    
-    // Lấy giá trị từ bộ nhớ
-    function getStorageItem(key) {
-      if (storageType === 'localStorage') {
-        return localStorage.getItem(key);
-      } else if (storageType === 'sessionStorage') {
-        return sessionStorage.getItem(key);
-      }
-      return null;
-    }
-    
-    // Chấp nhận lưu trữ
-    function acceptCookies() {
-      try {
-        if (storageAvailable) {
-          setStorageItem("storageAccepted", "true");
-          document.getElementById("cookieNotice").style.display = "none";
-          document.getElementById("storageInstructions").style.display = "none";
-          showSaveStatus(true, "Đã chấp nhận lưu trữ, bạn có thể lưu thiết lập!");
-        } else {
-          alert("Trình duyệt của bạn không hỗ trợ lưu trữ. Vui lòng thử với trình duyệt khác hoặc tắt chế độ ẩn danh.");
-        }
-        updateStorageStatus();
-      } catch (e) {
-        showSaveStatus(false, "Lỗi: " + e.message);
-        console.error("Lỗi khi chấp nhận lưu trữ:", e);
-      }
-    }
-    
-    // Hiển thị trạng thái lưu
-    function showSaveStatus(success, message) {
-      const statusDiv = document.getElementById('debugInfo') || document.createElement('div');
-      if (!document.getElementById('debugInfo')) {
-        statusDiv.className = 'debug-info';
-        statusDiv.id = 'debugInfo';
-        document.body.appendChild(statusDiv);
-      }
-      
-      statusDiv.textContent = message;
-      statusDiv.style.backgroundColor = success ? 'rgba(0,128,0,0.7)' : 'rgba(255,0,0,0.7)';
-      statusDiv.style.display = 'block';
-      
-      setTimeout(() => {
-        statusDiv.style.display = 'none';
-      }, 3000);
-      
-      // Cập nhật trạng thái trong phần hướng dẫn
-      updateStorageStatus();
-    }
-    
-    // Chuyển đổi hiển thị các phần
-    function toggleSection(sectionId) {
-      const section = document.getElementById(sectionId);
-      const button = section.previousElementSibling;
-      
-      section.classList.toggle('active');
-      button.classList.toggle('active');
-    }
-    
-    // Hiển thị xem trước ảnh
-    function previewImage() {
-      const imageUrl = document.getElementById("imageUrl").value;
-      const imagePreview = document.getElementById("imagePreview");
-      
-      if (!imageUrl) {
-        alert("Vui lòng nhập đường dẫn hình ảnh!");
-        return;
-      }
-      
-      imagePreview.src = imageUrl;
-      imagePreview.style.display = "block";
-      imagePreview.onerror = function() {
-        alert("Không thể tải hình ảnh. Vui lòng kiểm tra đường dẫn!");
-        imagePreview.style.display = "none";
-      };
-    }
-    
-    // Tạo mã HTML cho hình ảnh
-    function createImageHTML() {
-      const imageUrl = document.getElementById("imageUrl").value;
-      const imageAlt = document.getElementById("imageAlt").value || "Image";
-      const imageWidth = document.getElementById("imageWidth").value;
-      
-      if (!imageUrl) return "";
-      
-      const widthAttr = imageWidth ? ` width="${imageWidth}"` : "";
-      return `<img src="${imageUrl}" alt="${imageAlt}"${widthAttr}>`;
-    }
-    
-    // Tạo mã Markdown cho hình ảnh
-    function createImageMarkdown() {
-      const imageUrl = document.getElementById("imageUrl").value;
-      const imageAlt = document.getElementById("imageAlt").value || "Image";
-      
-      if (!imageUrl) return "";
-      
-      return `![${imageAlt}](${imageUrl})`;
-    }
-    
-    // Tạo mã BBCode cho hình ảnh
-    function createImageBBCode() {
-      const imageUrl = document.getElementById("imageUrl").value;
-      
-      if (!imageUrl) return "";
-      
-      return `[img]${imageUrl}[/img]`;
-    }
-    
-    // Tạo nội dung kết hợp giữa liên kết và hình ảnh
-    function generateContent() {
-      let content = document.getElementById("limitedContent").value;
-      const keyword = document.getElementById("keyword").value;
-      const link = document.getElementById("link").value;
-      const limit = parseInt(document.getElementById("linkLimit").value) || 2;
-      
-      if (!content) {
-        alert("Vui lòng nhập nội dung!");
-        return;
-      }
-      
-      // Tạo HTML cho hình ảnh (nếu có)
-      const imageHTML = createImageHTML();
-      const imageMarkdown = createImageMarkdown();
-      const imageBBCode = createImageBBCode();
-      
-      // Tạo định dạng liên kết (nếu có)
-      let htmlLink = keyword && link ? `<a href="${link}">${keyword}</a>` : "";
-      let markdownLink = keyword && link ? `[${keyword}](${link})` : "";
-      let bbcodeLink = keyword && link ? `[url=${link}]${keyword}[/url]` : "";
-      let plainLink = link || "";
-      
-      // Thay thế từ khóa trong nội dung (nếu có từ khóa và link)
-      let newContentHtml = content;
-      let newContentMarkdown = content;
-      let newContentBbcode = content;
-      let newContentPlain = content;
-      
-      if (keyword && link) {
-        newContentHtml = replaceLimited(content, keyword, htmlLink, limit);
-        newContentMarkdown = replaceLimited(content, keyword, markdownLink, limit);
-        newContentBbcode = replaceLimited(content, keyword, bbcodeLink, limit);
-        newContentPlain = replaceLimited(content, keyword, plainLink, limit);
-      }
-      
-      // Thêm hình ảnh vào cuối nội dung (nếu có)
-      if (imageHTML) {
-        newContentHtml += "<br><br>" + imageHTML;
-        newContentMarkdown += "\n\n" + imageMarkdown;
-        newContentBbcode += "\n\n" + imageBBCode;
-        newContentPlain += "\n\n" + document.getElementById("imageUrl").value;
-      }
-      
-      // Hiển thị kết quả
-      document.getElementById("htmlCodeOutput").textContent = newContentHtml;
-      document.getElementById("markdownCodeOutput").textContent = newContentMarkdown;
-      document.getElementById("bbcodeCodeOutput").textContent = newContentBbcode;
-      document.getElementById("plainCodeOutput").textContent = newContentPlain;
-      
-      // Cập nhật phần xem trước
-      document.getElementById("previewContent").innerHTML = newContentHtml;
-    }
-    
-    // Lưu thiết lập hiện tại vào lịch sử
-    function saveToHistory() {
-      // Kiểm tra xem đã chấp nhận lưu trữ chưa
-      if (!isStorageAccepted()) {
-        alert("Vui lòng đồng ý lưu trữ dữ liệu để sử dụng tính năng lưu lịch sử");
-        document.getElementById("cookieNotice").style.display = "block";
-        document.getElementById("storageInstructions").style.display = "block";
-        updateStorageStatus();
-        return;
-      }
-      
-      const content = document.getElementById("limitedContent").value;
-      const keyword = document.getElementById("keyword").value;
-      const link = document.getElementById("link").value;
-      const limit = document.getElementById("linkLimit").value;
-      const imageUrl = document.getElementById("imageUrl").value;
-      const imageAlt = document.getElementById("imageAlt").value;
-      const imageWidth = document.getElementById("imageWidth").value;
-      
-      if (!content) {
-        alert("Vui lòng nhập ít nhất nội dung để lưu!");
-        return;
-      }
-      
-      try {
-        // Lấy lịch sử hiện tại
-        let history = getHistory();
-        
-        // Tạo mục mới với thời gian hiện tại
-        const newItem = {
-          content: content,
-          keyword: keyword,
-          link: link,
-          limit: limit,
-          imageUrl: imageUrl,
-          imageAlt: imageAlt,
-          imageWidth: imageWidth,
-          timestamp: new Date().toISOString()
-        };
-        
-        // Thêm vào đầu mảng
-        history.unshift(newItem);
-        
-        // Giới hạn chỉ lưu tối đa 10 mục
-        if (history.length > 10) {
-          history = history.slice(0, 10);
-        }
-        
-        // Lưu và cập nhật giao diện
-        if (saveHistory(history)) {
-          displayHistory(history);
-          showSaveStatus(true, "Đã lưu thiết lập thành công!");
-        } else {
-          showSaveStatus(false, "Không thể lưu thiết lập, vui lòng kiểm tra quyền lưu trữ.");
-        }
-      } catch (e) {
-        showSaveStatus(false, "Lỗi khi lưu: " + e.message);
-        console.error("Lỗi khi lưu thiết lập:", e);
-      }
-    }
-    
-    // Lấy lịch sử 
-    function getHistory() {
-      try {
-        const historyData = getStorageItem("inputHistory");
-        if (historyData) {
-          return JSON.parse(historyData);
-        }
-      } catch (e) {
-        console.error("Lỗi khi đọc lịch sử:", e);
-        showSaveStatus(false, "Lỗi khi đọc lịch sử: " + e.message);
-      }
-      return [];
-    }
-    
-    // Lưu lịch sử
-    function saveHistory(history) {
-      try {
-        setStorageItem("inputHistory", JSON.stringify(history));
-        return true;
-      } catch (e) {
-        console.error("Lỗi khi lưu lịch sử:", e);
-        showSaveStatus(false, "Lỗi khi lưu lịch sử: " + e.message);
-        return false;
-      }
-    }
-    
-    // Tải và hiển thị lịch sử
-    function loadHistory() {
-      const history = getHistory();
-      displayHistory(history);
-    }
-    
-    // Hiển thị lịch sử trên giao diện
-    function displayHistory(history) {
-      const historyContainer = document.getElementById("historyItems");
-      historyContainer.innerHTML = "";
-      
-      if (history.length === 0) {
-        historyContainer.innerHTML = "<p>Chưa có lịch sử nào được lưu.</p>";
-        return;
-      }
-      
-      history.forEach((item, index) => {
-        const date = new Date(item.timestamp);
-        const formattedDate = date.toLocaleDateString() + " " + date.toLocaleTimeString();
-        
-        const historyItem = document.createElement("div");
-        historyItem.className = "history-item";
-        
-        // Hiển thị thông tin chính
-        let itemContent = `
-          <div>
-            <strong>${item.keyword || "(Không có từ khóa)"}</strong>`;
-        
-        if (item.link) {
-          itemContent += ` → ${item.link}`;
-        }
-        
-        if (item.imageUrl) {
-          itemContent += ` <span style="color:#4CAF50;">[Có hình ảnh]</span>`;
-        }
-        
-        itemContent += `<div class="history-date">${formattedDate}</div>
-          </div>
-          <div>
-            <button onclick="loadFromHistory(${index})">Chọn</button>
-            <button onclick="removeHistoryItem(${index})">Xóa</button>
-          </div>
-        `;
-        
-        historyItem.innerHTML = itemContent;
-        historyContainer.appendChild(historyItem);
+        return match;
       });
     }
-    
-    // Tải dữ liệu từ lịch sử vào form
-    function loadFromHistory(index) {
-      const history = getHistory();
-      const item = history[index];
-      
-      if (item) {
-        document.getElementById("limitedContent").value = item.content || "";
-        document.getElementById("keyword").value = item.keyword || "";
-        document.getElementById("link").value = item.link || "";
-        document.getElementById("linkLimit").value = item.limit || "2";
-        
-        // Thiết lập dữ liệu hình ảnh
-        document.getElementById("imageUrl").value = item.imageUrl || "";
-        document.getElementById("imageAlt").value = item.imageAlt || "";
-        document.getElementById("imageWidth").value = item.imageWidth || "";
-        
-        // Nếu có hình ảnh, hiển thị hình ảnh trước
-        if (item.imageUrl) {
-          const imagePreview = document.getElementById("imagePreview");
-          imagePreview.src = item.imageUrl;
-          imagePreview.style.display = "block";
-          
-          // Hiển thị phần thiết lập hình ảnh
-          document.getElementById("imageContent").classList.add("active");
-          document.getElementById("imageToggleBtn").classList.add("active");
-        }
-        
-        // Tự động tạo nội dung
-        generateContent();
+
+    function generateContent() {
+      const content = limitedContent.value;
+      const keyword = keywordInput.value.trim();
+      const link = linkInput.value.trim();
+
+      if (!content) {
+        previewContent.textContent = "Kết quả xem trước sẽ hiển thị ở đây...";
+        document.getElementById("htmlCodeOutput").textContent = "";
+        document.getElementById("markdownCodeOutput").textContent = "";
+        document.getElementById("bbcodeCodeOutput").textContent = "";
+        document.getElementById("plainCodeOutput").textContent = "";
+        return;
+      }
+
+      let html = toHtmlLayout(content);
+      let markdown = content;
+      let bbcode = content;
+      let plain = content;
+
+      if (keyword && link) {
+        const safeKeyword = escapeHtml(keyword);
+        const safeHref = escapeHtml(link);
+        html = replaceLimited(html, safeKeyword, `<a href="${safeHref}">${safeKeyword}</a>`);
+        markdown = replaceLimited(content, keyword, `[${keyword}](${link})`);
+        bbcode = replaceLimited(content, keyword, `[url=${link}]${keyword}[/url]`);
+        plain = replaceLimited(content, keyword, link);
+      }
+
+      document.getElementById("htmlCodeOutput").textContent = html;
+      document.getElementById("markdownCodeOutput").textContent = markdown;
+      document.getElementById("bbcodeCodeOutput").textContent = bbcode;
+      document.getElementById("plainCodeOutput").textContent = plain;
+      previewContent.innerHTML = html;
+    }
+
+    function storageGet(key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+    function storageSet(key, value) {
+      try { localStorage.setItem(key, value); return true; } catch (e) { return false; }
+    }
+
+    function getHistory() {
+      try {
+        const raw = storageGet(HISTORY_KEY) || storageGet(LEGACY_HISTORY_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
       }
     }
-    
-    // Xóa một mục khỏi lịch sử
-    function removeHistoryItem(index) {
+
+    function saveHistory(history) {
+      return storageSet(HISTORY_KEY, JSON.stringify(history));
+    }
+
+    function displayHistory(history) {
+      const box = document.getElementById("historyItems");
+      if (!history.length) {
+        box.innerHTML = '<p style="margin:0;color:var(--muted);font-size:13px;">Chưa có lịch sử nào được lưu.</p>';
+        return;
+      }
+      box.innerHTML = history.map((item, index) => {
+        const date = new Date(item.timestamp);
+        const formatted = Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+        return `<div class="history-item">
+          <div class="history-meta">
+            <strong>${item.keyword || "(Không có từ khóa)"}</strong>
+            <div class="history-date">${formatted}</div>
+          </div>
+          <div>
+            <button type="button" data-load="${index}">Chọn</button>
+            <button type="button" class="secondary" data-remove="${index}">Xóa</button>
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    function saveCurrent() {
+      const content = limitedContent.value;
+      if (!content) {
+        showToast("Vui lòng nhập nội dung để lưu");
+        return;
+      }
       let history = getHistory();
-      
-      if (confirm("Bạn có chắc muốn xóa mục này khỏi lịch sử?")) {
-        history.splice(index, 1);
-        saveHistory(history);
+      history.unshift({
+        content,
+        keyword: keywordInput.value,
+        link: linkInput.value,
+        password: passwordInput.value,
+        timestamp: new Date().toISOString()
+      });
+      history = history.slice(0, 10);
+      if (saveHistory(history)) {
         displayHistory(history);
+        showToast("Đã lưu thiết lập");
+      } else {
+        showToast("Không lưu được lịch sử trên trình duyệt này");
       }
     }
-    
-    // Xóa toàn bộ lịch sử
-    function clearHistory() {
+
+    function loadFromHistory(index) {
+      const item = getHistory()[index];
+      if (!item) return;
+      limitedContent.value = item.content || "";
+      keywordInput.value = item.keyword || "";
+      linkInput.value = item.link || "";
+      passwordInput.value = item.password || generateStrongPassword();
+      generateContent();
+    }
+
+    function applyTheme(isDark) {
+      document.body.classList.toggle("dark", isDark);
+      darkMode.checked = isDark;
+    }
+
+    document.getElementById("regenPassword").addEventListener("click", () => {
+      refreshPassword();
+      showToast("Đã tạo mật khẩu mới");
+    });
+    document.getElementById("copyPassword").addEventListener("click", () => {
+      copyText(passwordInput.value, "Đã copy mật khẩu");
+    });
+    document.getElementById("insertPassword").addEventListener("click", () => {
+      const password = passwordInput.value;
+      if (!password) return;
+      const start = limitedContent.selectionStart;
+      const end = limitedContent.selectionEnd;
+      const value = limitedContent.value;
+      const needsSpace = start > 0 && !/\s/.test(value[start - 1]);
+      const insert = (needsSpace ? " " : "") + password;
+      limitedContent.value = value.slice(0, start) + insert + value.slice(end);
+      limitedContent.focus();
+      limitedContent.selectionStart = limitedContent.selectionEnd = start + insert.length;
+      generateContent();
+    });
+    document.getElementById("generateBtn").addEventListener("click", generateContent);
+    document.getElementById("saveBtn").addEventListener("click", saveCurrent);
+    document.getElementById("clearHistoryBtn").addEventListener("click", () => {
       if (confirm("Bạn có chắc muốn xóa tất cả lịch sử?")) {
         saveHistory([]);
         displayHistory([]);
       }
-    }
-    
-    // Hàm thay thế tối đa 'limit' lần xuất hiện của từ khóa  
-    function replaceLimited(content, keyword, replacement, limit) {  
-      if (!keyword) return content;
-      let count = 0;  
-      return content.replace(new RegExp(escapeRegExp(keyword), 'gi'), function(match) {  
-        if (count < limit) {  
-          count++;  
-          return replacement;  
-        }  
-        return match;  
-      });  
-    }
-    
-    // Hàm escape các ký tự đặc biệt trong regex
-    function escapeRegExp(string) {
-      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    });
+    darkMode.addEventListener("change", () => {
+      applyTheme(darkMode.checked);
+      storageSet(THEME_KEY, darkMode.checked ? "1" : "0");
+    });
+
+    ["limitedContent", "keyword", "link"].forEach((id) => {
+      document.getElementById(id).addEventListener("input", generateContent);
+    });
+
+    const stickyCard = document.getElementById("stickyNoteCard");
+    const stickyHandle = document.getElementById("stickyHandle");
+    const stickyFields = {
+      site: document.getElementById("stickySite"),
+      url: document.getElementById("stickyUrl"),
+      password: document.getElementById("stickyPassword"),
+      note: document.getElementById("stickyNote")
+    };
+
+    function defaultStickyState() {
+      return { x: 16, y: 56, site: "", url: "", password: "", note: "", collapsed: false };
     }
 
-    function copyCode(elementId, btnId) {  
-      let codeElement = document.getElementById(elementId);  
-      let codeText = codeElement.textContent;  
-      let copyBtn = document.getElementById(btnId);  
-      
-      if (navigator.clipboard && window.isSecureContext) {  
-          navigator.clipboard.writeText(codeText)  
-          .then(() => {  
-              // Thay đổi nội dung nút khi copy thành công  
-              let originalText = copyBtn.textContent;  
-              copyBtn.textContent = 'Đã copy';  
-              // Sau 2 giây, trả lại nội dung ban đầu  
-              setTimeout(() => { copyBtn.textContent = originalText; }, 2000);  
-          })  
-          .catch(err => console.error('Copy thất bại: ', err));  
-      } else {  
-          let textArea = document.createElement("textarea");  
-          textArea.value = codeText;  
-          textArea.style.position = "fixed";  
-          textArea.style.left = "-999999px";  
-          textArea.style.top = "-999999px";  
-          document.body.appendChild(textArea);  
-          textArea.focus();  
-          textArea.select();  
-          
-          try {  
-              document.execCommand('copy');  
-              let originalText = copyBtn.textContent;  
-              copyBtn.textContent = 'Đã copy';  
-              setTimeout(() => { copyBtn.textContent = originalText; }, 2000);  
-          } catch (err) {  
-              console.error('Copy thất bại: ', err);  
-          }  
-          document.body.removeChild(textArea);  
-      }  
-    }
-    
-    // Chức năng chuyển đổi tab
-    function switchTab(tabName) {
-      // Ẩn tất cả tab content và hủy active
-      const tabContents = document.querySelectorAll('.tab-content');
-      tabContents.forEach(tab => tab.classList.remove('active'));
-      
-      const tabs = document.querySelectorAll('.tab');
-      tabs.forEach(tab => tab.classList.remove('active'));
-      
-      // Hiển thị tab được chọn
-      document.getElementById(tabName + '-tab').classList.add('active');
-      
-      // Kích hoạt tab được chọn
-      const selectedTab = Array.from(tabs).find(tab => 
-        tab.textContent.toLowerCase() === tabName.toLowerCase());
-      if (selectedTab) {
-        selectedTab.classList.add('active');
+    function readStickyState() {
+      try {
+        const raw = storageGet(NOTE_KEY);
+        if (!raw) return defaultStickyState();
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") return { ...defaultStickyState(), ...parsed };
+        return { ...defaultStickyState(), note: String(raw) };
+      } catch (e) {
+        return { ...defaultStickyState(), note: storageGet(NOTE_KEY) || "" };
       }
     }
-    
-    // Chức năng chuyển đổi chế độ tối
-    function toggleDarkMode() {
-      document.body.classList.toggle('dark-mode');
+
+    function clampStickyPos(x, y) {
+      const maxX = Math.max(8, window.innerWidth - stickyCard.offsetWidth - 8);
+      const maxY = Math.max(8, window.innerHeight - stickyCard.offsetHeight - 8);
+      return {
+        x: Math.min(Math.max(8, x), maxX),
+        y: Math.min(Math.max(8, y), maxY)
+      };
     }
-  </script>  
-</body>  
-</html>  
+
+    function applyStickyPos(x, y) {
+      const pos = clampStickyPos(x, y);
+      stickyCard.style.left = pos.x + "px";
+      stickyCard.style.top = pos.y + "px";
+      return pos;
+    }
+
+    function currentStickyState() {
+      const left = parseFloat(stickyCard.style.left) || stickyCard.getBoundingClientRect().left;
+      const top = parseFloat(stickyCard.style.top) || stickyCard.getBoundingClientRect().top;
+      return {
+        x: left,
+        y: top,
+        site: stickyFields.site.value,
+        url: stickyFields.url.value,
+        password: stickyFields.password.value,
+        note: stickyFields.note.value,
+        collapsed: stickyCard.classList.contains("collapsed")
+      };
+    }
+
+    function saveStickyState() {
+      storageSet(NOTE_KEY, JSON.stringify(currentStickyState()));
+    }
+
+    function loadStickyState() {
+      const state = readStickyState();
+      stickyFields.site.value = state.site;
+      stickyFields.url.value = state.url;
+      stickyFields.password.value = state.password;
+      stickyFields.note.value = state.note;
+      stickyCard.classList.toggle("collapsed", !!state.collapsed);
+      document.getElementById("stickyToggle").textContent = state.collapsed ? "+" : "−";
+      requestAnimationFrame(() => applyStickyPos(state.x, state.y));
+    }
+
+    let drag = null;
+    function startStickyDrag(event) {
+      if (event.target.closest("button")) return;
+      if (event.type === "mousedown" && event.button !== 0) return;
+      const rect = stickyCard.getBoundingClientRect();
+      drag = {
+        dx: event.clientX - rect.left,
+        dy: event.clientY - rect.top
+      };
+      stickyCard.classList.add("dragging");
+      if (event.pointerId != null) {
+        try { stickyHandle.setPointerCapture(event.pointerId); } catch (e) {}
+      }
+      event.preventDefault();
+    }
+    function moveStickyDrag(event) {
+      if (!drag) return;
+      applyStickyPos(event.clientX - drag.dx, event.clientY - drag.dy);
+    }
+    function endStickyDrag() {
+      if (!drag) return;
+      drag = null;
+      stickyCard.classList.remove("dragging");
+      saveStickyState();
+    }
+    stickyHandle.addEventListener("pointerdown", startStickyDrag);
+    window.addEventListener("pointermove", moveStickyDrag);
+    window.addEventListener("pointerup", endStickyDrag);
+    window.addEventListener("pointercancel", endStickyDrag);
+    stickyHandle.addEventListener("mousedown", startStickyDrag);
+    window.addEventListener("mousemove", moveStickyDrag);
+    window.addEventListener("mouseup", endStickyDrag);
+
+    document.getElementById("stickyToggle").addEventListener("click", (event) => {
+      event.stopPropagation();
+      stickyCard.classList.toggle("collapsed");
+      document.getElementById("stickyToggle").textContent =
+        stickyCard.classList.contains("collapsed") ? "+" : "−";
+      saveStickyState();
+    });
+
+    Object.values(stickyFields).forEach((field) => {
+      field.addEventListener("input", saveStickyState);
+    });
+    stickyCard.querySelectorAll("[data-copy-sticky]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const field = document.getElementById(btn.dataset.copySticky);
+        copyText(field.value, "Đã copy");
+      });
+    });
+    document.getElementById("stickyFromForm").addEventListener("click", () => {
+      stickyFields.site.value = keywordInput.value;
+      stickyFields.url.value = linkInput.value;
+      stickyFields.password.value = passwordInput.value;
+      saveStickyState();
+      showToast("Đã lấy từ form");
+    });
+    document.getElementById("stickyToForm").addEventListener("click", () => {
+      if (stickyFields.site.value) keywordInput.value = stickyFields.site.value;
+      if (stickyFields.url.value) linkInput.value = stickyFields.url.value;
+      if (stickyFields.password.value) passwordInput.value = stickyFields.password.value;
+      generateContent();
+      showToast("Đã điền vào form");
+    });
+    window.addEventListener("resize", () => {
+      const state = currentStickyState();
+      applyStickyPos(state.x, state.y);
+    });
+    loadStickyState();
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.tab + "-tab").classList.add("active");
+      });
+    });
+
+    document.querySelectorAll(".copy-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        copyText(document.getElementById(btn.dataset.copy).textContent, "Đã copy");
+      });
+    });
+
+    document.getElementById("historyItems").addEventListener("click", (event) => {
+      const load = event.target.closest("[data-load]");
+      const remove = event.target.closest("[data-remove]");
+      if (load) loadFromHistory(Number(load.dataset.load));
+      if (remove) {
+        const history = getHistory();
+        history.splice(Number(remove.dataset.remove), 1);
+        saveHistory(history);
+        displayHistory(history);
+      }
+    });
+
+    limitedContent.value = "Đây là một ví dụ về từ khóa.\n\nTừ khóa này sẽ xuất hiện nhiều lần\nnhưng chỉ được thay thế một số lần.";
+    keywordInput.value = "từ khóa";
+    linkInput.value = "https://example.com";
+    refreshPassword();
+    applyTheme(storageGet(THEME_KEY) === "1");
+    displayHistory(getHistory());
+    generateContent();
+  </script>
+</body>
+</html>
